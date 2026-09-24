@@ -1,0 +1,222 @@
+{
+  "spec_version": "golden-queries.v1",
+  "executed_at": "2026-09-24T19:48:42.828365+00:00",
+  "total_queries": 10,
+  "status_agreement": 1.0,
+  "verified_set_agreement": 1.0,
+  "hard_constraint_mispass": 0,
+  "check_mismatch": 0,
+  "gate": {
+    "hard_constraint_mispass_must_be_zero": true,
+    "passed": true
+  },
+  "results": [
+    {
+      "query_id": "family_yanqing",
+      "status_expected": "VERIFIED_MATCHES",
+      "status_actual": "VERIFIED_MATCHES",
+      "status_agrees": true,
+      "verified_agrees": true,
+      "hard_mispass": 0,
+      "check_mismatches": [],
+      "route_results": [
+        {
+          "route_id": "bj-yanqing-001",
+          "found": true,
+          "expected_hard_pass": true,
+          "actual_hard_pass": true,
+          "hard_pass_agrees": true
+        }
+      ]
+    },
+    {
+      "query_id": "huairou_basic",
+      "status_expected": "VERIFIED_MATCHES",
+      "status_actual": "VERIFIED_MATCHES",
+      "status_agrees": true,
+      "verified_agrees": true,
+      "hard_mispass": 0,
+      "check_mismatches": [],
+      "route_results": [
+        {
+          "route_id": "bj-huairou-002",
+          "found": true,
+          "expected_hard_pass": true,
+          "actual_hard_pass": true,
+          "hard_pass_agrees": true
+        }
+      ]
+    },
+    {
+      "query_id": "beijing_cliff_avoid",
+      "status_expected": "VERIFIED_MATCHES",
+      "status_actual": "VERIFIED_MATCHES",
+      "status_agrees": true,
+      "verified_agrees": true,
+      "hard_mispass": 0,
+      "check_mismatches": [],
+      "route_results": [
+        {
+          "route_id": "bj-yanqing-001",
+          "found": true,
+          "expected_hard_pass": true,
+          "actual_hard_pass": true,
+          "hard_pass_agrees": true
+        },
+        {
+          "route_id": "bj-mentougou-003",
+          "found": true,
+          "expected_hard_pass": true,
+          "actual_hard_pass": true,
+          "hard_pass_agrees": true
+        },
+        {
+          "route_id": "bj-huairou-002",
+          "found": true,
+          "expected_hard_pass": false,
+          "actual_hard_pass": false,
+          "hard_pass_agrees": true,
+          "check_agrees": true
+        },
+        {
+          "route_id": "bj-miyun-004",
+          "found": true,
+          "expected_hard_pass": false,
+          "actual_hard_pass": false,
+          "hard_pass_agrees": true,
+          "check_agrees": true
+        }
+      ]
+    },
+    {
+      "query_id": "tight_distance",
+      "status_expected": "NO_MATCH",
+      "status_actual": "NO_MATCH",
+      "status_agrees": true,
+      "verified_agrees": true,
+      "hard_mispass": 0,
+      "check_mismatches": [],
+      "route_results": [
+        {
+          "route_id": "bj-yanqing-001",
+          "found": true,
+          "expected_hard_pass": false,
+          "actual_hard_pass": false,
+          "hard_pass_agrees": true,
+          "check_agrees": true
+        }
+      ]
+    },
+    {
+      "query_id": "no_candidate_region",
+      "status_expected": "NO_MATCH",
+      "status_actual": "NO_MATCH",
+      "status_agrees": true,
+      "verified_agrees": true,
+      "hard_mispass": 0,
+      "check_mismatches": [],
+      "route_results": []
+    },
+    {
+      "query_id": "elevation_cap",
+      "status_expected": "VERIFIED_MATCHES",
+      "status_actual": "VERIFIED_MATCHES",
+      "status_agrees": true,
+      "verified_agrees": true,
+      "hard_mispass": 0,
+      "check_mismatches": [],
+      "route_results": [
+        {
+          "route_id": "bj-huairou-002",
+          "found": true,
+          "expected_hard_pass": true,
+          "actual_hard_pass": true,
+          "hard_pass_agrees": true
+        },
+        {
+          "route_id": "bj-yanqing-001",
+          "found": true,
+          "expected_hard_pass": false,
+          "actual_hard_pass": false,
+          "hard_pass_agrees": true,
+          "check_agrees": true
+        }
+      ]
+    },
+    {
+      "query_id": "conflict_distance_evidence",
+      "status_expected": "INSUFFICIENT_EVIDENCE",
+      "status_actual": "INSUFFICIENT_EVIDENCE",
+      "status_agrees": true,
+      "verified_agrees": true,
+      "hard_mispass": 0,
+      "check_mismatches": [],
+      "route_results": [
+        {
+          "route_id": "bj-yanqing-001",
+          "found": true,
+          "expected_hard_pass": false,
+          "actual_hard_pass": false,
+          "hard_pass_agrees": true,
+          "check_agrees": true
+        }
+      ]
+    },
+    {
+      "query_id": "stale_risk_beyond_grace",
+      "status_expected": "INSUFFICIENT_EVIDENCE",
+      "status_actual": "INSUFFICIENT_EVIDENCE",
+      "status_agrees": true,
+      "verified_agrees": true,
+      "hard_mispass": 0,
+      "check_mismatches": [],
+      "route_results": [
+        {
+          "route_id": "bj-huairou-002",
+          "found": true,
+          "expected_hard_pass": false,
+          "actual_hard_pass": false,
+          "hard_pass_agrees": true,
+          "check_agrees": true
+        }
+      ]
+    },
+    {
+      "query_id": "stale_distance_within_grace",
+      "status_expected": "VERIFIED_MATCHES",
+      "status_actual": "VERIFIED_MATCHES",
+      "status_agrees": true,
+      "verified_agrees": true,
+      "hard_mispass": 0,
+      "check_mismatches": [],
+      "route_results": [
+        {
+          "route_id": "bj-yanqing-001",
+          "found": true,
+          "expected_hard_pass": true,
+          "actual_hard_pass": true,
+          "hard_pass_agrees": true,
+          "check_agrees": true
+        }
+      ]
+    },
+    {
+      "query_id": "evidence_provider_failure",
+      "status_expected": "INSUFFICIENT_EVIDENCE",
+      "status_actual": "INSUFFICIENT_EVIDENCE",
+      "status_agrees": true,
+      "verified_agrees": true,
+      "hard_mispass": 0,
+      "check_mismatches": [],
+      "route_results": [
+        {
+          "route_id": "bj-yanqing-001",
+          "found": true,
+          "expected_hard_pass": false,
+          "actual_hard_pass": false,
+          "hard_pass_agrees": true
+        }
+      ]
+    }
+  ]
+}
