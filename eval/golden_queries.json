@@ -1,0 +1,184 @@
+{
+  "spec_version": "golden-queries.v1",
+  "fixture_note": "基于 FakeRouteProvider 默认 fixture：bj-yanqing-001(7.6km/248m/无风险)、bj-huairou-002(6.2km/180m/悬崖)、bj-mentougou-003(8.5km/260m/无风险)、bj-miyun-004(5.5km/210m/风险证据缺失)",
+  "queries": [
+    {
+      "query_id": "family_yanqing",
+      "description": "亲子出行：延庆 8km/300m/避悬崖/2h/水源+商店",
+      "intent": {
+        "location": "北京·延庆",
+        "participants": {"children": true, "child_ages": [8]},
+        "max_distance_km": 8,
+        "max_elevation_gain_m": 300,
+        "avoid_risk_types": ["risk_cliff_exposure"],
+        "max_duration_minutes": 120,
+        "required_facilities": ["water_source", "store"]
+      },
+      "expected": {
+        "status": "VERIFIED_MATCHES",
+        "verified_route_ids": ["bj-yanqing-001"],
+        "route_expectations": [
+          {"route_id": "bj-yanqing-001", "hard_pass": true}
+        ]
+      }
+    },
+    {
+      "query_id": "huairou_basic",
+      "description": "怀柔基础约束：未要求规避悬崖，距离爬升满足即通过",
+      "intent": {
+        "location": "北京·怀柔",
+        "max_distance_km": 8,
+        "max_elevation_gain_m": 300
+      },
+      "expected": {
+        "status": "VERIFIED_MATCHES",
+        "verified_route_ids": ["bj-huairou-002"],
+        "route_expectations": [
+          {"route_id": "bj-huairou-002", "hard_pass": true}
+        ]
+      }
+    },
+    {
+      "query_id": "beijing_cliff_avoid",
+      "description": "全城规避悬崖：怀柔 FAIL、密云 UNKNOWN、两条通过",
+      "intent": {
+        "location": "北京",
+        "max_distance_km": 10,
+        "max_elevation_gain_m": 400,
+        "avoid_risk_types": ["risk_cliff_exposure"]
+      },
+      "expected": {
+        "status": "VERIFIED_MATCHES",
+        "verified_route_ids": ["bj-yanqing-001", "bj-mentougou-003"],
+        "route_expectations": [
+          {"route_id": "bj-yanqing-001", "hard_pass": true},
+          {"route_id": "bj-mentougou-003", "hard_pass": true},
+          {"route_id": "bj-huairou-002", "hard_pass": false, "check": {"constraint": "avoid_risk_types", "status": "FAIL"}},
+          {"route_id": "bj-miyun-004", "hard_pass": false, "check": {"constraint": "avoid_risk_types", "status": "UNKNOWN"}}
+        ]
+      }
+    },
+    {
+      "query_id": "tight_distance",
+      "description": "3km 紧约束：全部候选距离 FAIL，无合格路线",
+      "intent": {
+        "location": "北京",
+        "max_distance_km": 3,
+        "max_elevation_gain_m": 300
+      },
+      "expected": {
+        "status": "NO_MATCH",
+        "verified_route_ids": [],
+        "route_expectations": [
+          {"route_id": "bj-yanqing-001", "hard_pass": false, "check": {"constraint": "max_distance_km", "status": "FAIL"}}
+        ]
+      }
+    },
+    {
+      "query_id": "no_candidate_region",
+      "description": "无候选地区：NO_MATCH 属于正常业务结论",
+      "intent": {
+        "location": "上海",
+        "max_distance_km": 8,
+        "max_elevation_gain_m": 300
+      },
+      "expected": {
+        "status": "NO_MATCH",
+        "verified_route_ids": [],
+        "route_expectations": []
+      }
+    },
+    {
+      "query_id": "elevation_cap",
+      "description": "爬升上限 200m：仅怀柔通过",
+      "intent": {
+        "location": "北京",
+        "max_distance_km": 10,
+        "max_elevation_gain_m": 200
+      },
+      "expected": {
+        "status": "VERIFIED_MATCHES",
+        "verified_route_ids": ["bj-huairou-002"],
+        "route_expectations": [
+          {"route_id": "bj-huairou-002", "hard_pass": true},
+          {"route_id": "bj-yanqing-001", "hard_pass": false, "check": {"constraint": "max_elevation_gain_m", "status": "FAIL"}}
+        ]
+      }
+    },
+    {
+      "query_id": "conflict_distance_evidence",
+      "description": "证据冲突注入：延庆距离 CONFLICT 不得通过",
+      "intent": {
+        "location": "北京·延庆",
+        "max_distance_km": 8,
+        "max_elevation_gain_m": 300
+      },
+      "evidence_overrides": [
+        {"route_id": "bj-yanqing-001", "fact_type": "distance_km", "status": "CONFLICT"}
+      ],
+      "expected": {
+        "status": "INSUFFICIENT_EVIDENCE",
+        "verified_route_ids": [],
+        "route_expectations": [
+          {"route_id": "bj-yanqing-001", "hard_pass": false, "check": {"constraint": "max_distance_km", "status": "UNKNOWN"}}
+        ]
+      }
+    },
+    {
+      "query_id": "stale_risk_beyond_grace",
+      "description": "风险证据过期且无宽限：UNKNOWN 不得通过",
+      "intent": {
+        "location": "北京·怀柔",
+        "max_distance_km": 8,
+        "max_elevation_gain_m": 300,
+        "avoid_risk_types": ["risk_cliff_exposure"]
+      },
+      "evidence_overrides": [
+        {"route_id": "bj-huairou-002", "fact_type": "risk_types", "valid_until_offset_seconds": -25200}
+      ],
+      "expected": {
+        "status": "INSUFFICIENT_EVIDENCE",
+        "verified_route_ids": [],
+        "route_expectations": [
+          {"route_id": "bj-huairou-002", "hard_pass": false, "check": {"constraint": "avoid_risk_types", "status": "UNKNOWN"}}
+        ]
+      }
+    },
+    {
+      "query_id": "stale_distance_within_grace",
+      "description": "静态距离证据短宽限期内可用：PASS 且标记陈旧",
+      "intent": {
+        "location": "北京·延庆",
+        "max_distance_km": 8,
+        "max_elevation_gain_m": 300
+      },
+      "evidence_overrides": [
+        {"route_id": "bj-yanqing-001", "fact_type": "distance_km", "valid_until_offset_seconds": -21660}
+      ],
+      "expected": {
+        "status": "VERIFIED_MATCHES",
+        "verified_route_ids": ["bj-yanqing-001"],
+        "route_expectations": [
+          {"route_id": "bj-yanqing-001", "hard_pass": true, "check": {"constraint": "max_distance_km", "status": "PASS", "stale": true}}
+        ]
+      }
+    },
+    {
+      "query_id": "evidence_provider_failure",
+      "description": "取证依赖故障：不得伪造任何已验证路线",
+      "intent": {
+        "location": "北京",
+        "max_distance_km": 10,
+        "max_elevation_gain_m": 400
+      },
+      "provider_failure": "evidence",
+      "expected": {
+        "status": "INSUFFICIENT_EVIDENCE",
+        "verified_route_ids": [],
+        "route_expectations": [
+          {"route_id": "bj-yanqing-001", "hard_pass": false}
+        ]
+      }
+    }
+  ]
+}

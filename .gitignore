@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Local configuration and data
+.env
+.env.*
+!.env.example
+data/raw/
+data/generated/
+*.sqlite3
+*.db
+
+# Runtime output
+logs/
+coverage.xml
+htmlcov/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Secrets and local certificates
+*.pem
+*.key

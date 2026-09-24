@@ -1,0 +1,49 @@
+[project]
+name = "sixfoot-route-agent"
+version = "0.1.0"
+description = "Constraint-verified outdoor route decision agent"
+requires-python = ">=3.11"
+dependencies = [
+    "alembic>=1.13.0",
+    "fastapi>=0.115.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.4.0",
+    "pyyaml>=6.0",
+    "redis>=5.0.0",
+    "sqlalchemy[asyncio]>=2.0.35",
+    "uvicorn[standard]>=0.30.0",
+]
+
+[project.optional-dependencies]
+mysql = ["asyncmy>=0.2.9"]
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.20.0",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.6.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# conftest 需要先注入 sys.path 再导入应用包
+"tests/conftest.py" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

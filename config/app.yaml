@@ -1,0 +1,30 @@
+# 结构性配置：所有段落的键会拍平为 Settings 字段；同名大写环境变量优先于此文件。
+app:
+  app_name: sixfoot-route-agent
+  app_env: local
+  api_prefix: /api/v1
+  hard_deadline_seconds: 60
+  max_candidates: 50
+  top_k_evidence: 5
+  max_repair_rounds: 2
+
+worker:
+  worker_enabled: false
+  worker_concurrency: 20
+  lease_seconds: 30
+  heartbeat_seconds: 10
+
+search:
+  search_timeout_seconds: 2.0
+  search_max_page_size: 50
+  search_reserved_concurrency: 5
+
+evidence:
+  evidence_batch_size: 20
+  evidence_timeout_seconds: 3.0
+
+limits:
+  max_input_chars: 4000
+  max_in_flight_runs_per_user: 3
+  max_facts_per_run: 30
+  max_provider_calls_per_run: 20
