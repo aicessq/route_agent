@@ -10,6 +10,7 @@ Planner（阶段 4）面向"缺少什么事实"规划，不面向内部工具名
 class SearchProvider(Protocol):
     async def search(self, intent: RouteIntent, *, limit: int) -> list[RouteCandidate]: ...
 
+
 class EvidenceProvider(Protocol):
     async def collect(
         self, route_ids: Sequence[str], fact_types: Sequence[FactType]

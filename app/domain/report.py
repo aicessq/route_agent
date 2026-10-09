@@ -57,6 +57,18 @@ class CandidateReport(BaseModel):
     evidence: list[EvidenceRecord] = Field(default_factory=list)
 
 
+class RelaxationApplied(BaseModel):
+    """一次已执行的放宽：只允许来自用户显式授权，记录前后值与授权来源。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    field: str
+    from_value: float
+    to_value: float
+    authorization_source: str = "user_consent"
+    intent_version: int = 1
+
+
 class DecisionReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -71,6 +83,8 @@ class DecisionReport(BaseModel):
     verified_route_ids: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     budget: dict[str, Any] = Field(default_factory=dict)
+    relaxation_applied: list[RelaxationApplied] = Field(default_factory=list)
+    repair_rounds: int = 0
 
     @property
     def has_verified_match(self) -> bool:

@@ -61,7 +61,8 @@ class RouteIntent(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     schema_version: str = "route-intent.v1"
-    location: str = Field(min_length=1, max_length=200)
+    # 允许空字符串作为“待追问”中间态；Completeness Gate 负责强制补齐后再推进。
+    location: str = Field(default="", max_length=200)
     travel_date: date | None = None
     participants: Participants = Field(default_factory=Participants)
 

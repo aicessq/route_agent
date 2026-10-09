@@ -35,9 +35,12 @@ class FakeRouteProvider(SearchProvider, EvidenceProvider):
         await self._delay()
         if self.fail_search:
             raise RuntimeError("fake search provider unavailable")
-        location = intent.location.casefold()
+        # 地点归一化匹配：兼容“北京延庆/延庆县/密云区”等自然写法对“北京·延庆”。
+        intent_norm = _normalize_location(intent.location)
         matches = [
-            candidate for candidate in self.candidates if location in candidate.location.casefold()
+            candidate
+            for candidate in self.candidates
+            if not intent_norm or intent_norm in _normalize_location(candidate.location)
         ]
         return matches[:limit]
 
@@ -60,6 +63,16 @@ class FakeRouteProvider(SearchProvider, EvidenceProvider):
     async def _delay(self) -> None:
         if self.delay_seconds > 0:
             await asyncio.sleep(self.delay_seconds)
+
+
+def _normalize_location(location: str) -> str:
+    """去掉分隔符与行政后缀，保留可比较的核心地名。"""
+    normalized = location.replace("·", "").replace(" ", "").casefold()
+    for suffix in ("周边", "市", "区", "县", "省"):
+        if normalized.endswith(suffix) and len(normalized) > len(suffix):
+            normalized = normalized[: -len(suffix)]
+            break
+    return normalized
 
 
 def default_candidates() -> list[RouteCandidate]:

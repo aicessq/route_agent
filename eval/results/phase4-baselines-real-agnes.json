@@ -1,0 +1,417 @@
+{
+  "spec_version": "phase4-baselines.real-agnes",
+  "mode": "real-agnes",
+  "total_queries": 8,
+  "baseline_a_fixed_filter": {
+    "hard_mispass_total": 4,
+    "note": "索引无风险数据：风险约束无法过滤；缺数据候选被静默丢弃"
+  },
+  "baseline_b_react_simulated": {
+    "hard_mispass_total": 4,
+    "note": "确定性模拟：只取证前2个候选，未核验候选被无差别推荐（无完备性保证）"
+  },
+  "baseline_c_pipeline": {
+    "hard_mispass_total": 0,
+    "status_agreement": 8,
+    "verified_set_agreement": 8,
+    "intent_field_accuracy": 1.0,
+    "llm_calls": 12,
+    "llm_tokens": 9325
+  },
+  "gate": {
+    "c_hard_mispass_must_be_zero": true,
+    "passed": true
+  },
+  "results": [
+    {
+      "query_id": "family_full",
+      "baseline_a": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-huairou-002"
+        ],
+        "dropped_missing_data": [
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [
+            "bj-huairou-002"
+          ],
+          "unverified_recommended": [],
+          "total": 1
+        }
+      },
+      "baseline_b": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "unchecked_recommended": [
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [
+            "bj-miyun-004"
+          ],
+          "total": 1
+        }
+      },
+      "baseline_c": {
+        "status": "SUCCEEDED",
+        "recommended": [
+          "bj-yanqing-001"
+        ],
+        "status_agrees": true,
+        "verified_agrees": true,
+        "relaxation_applied": false,
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        },
+        "compile_source": "llm_primary",
+        "intent_field_mismatches": []
+      }
+    },
+    {
+      "query_id": "cliff_citywide",
+      "baseline_a": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-huairou-002",
+          "bj-mentougou-003"
+        ],
+        "dropped_missing_data": [
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [
+            "bj-huairou-002"
+          ],
+          "unverified_recommended": [],
+          "total": 1
+        }
+      },
+      "baseline_b": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "unchecked_recommended": [
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [
+            "bj-miyun-004"
+          ],
+          "total": 1
+        }
+      },
+      "baseline_c": {
+        "status": "SUCCEEDED",
+        "recommended": [
+          "bj-mentougou-003",
+          "bj-yanqing-001"
+        ],
+        "status_agrees": true,
+        "verified_agrees": true,
+        "relaxation_applied": false,
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        },
+        "compile_source": "llm_primary",
+        "intent_field_mismatches": []
+      }
+    },
+    {
+      "query_id": "tight_distance",
+      "baseline_a": {
+        "recommended": [],
+        "dropped_missing_data": [
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        }
+      },
+      "baseline_b": {
+        "recommended": [
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "unchecked_recommended": [
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        }
+      },
+      "baseline_c": {
+        "status": "NO_MATCH",
+        "recommended": [],
+        "status_agrees": true,
+        "verified_agrees": true,
+        "relaxation_applied": false,
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        },
+        "compile_source": "llm_primary",
+        "intent_field_mismatches": []
+      }
+    },
+    {
+      "query_id": "relax_authorized",
+      "baseline_a": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-huairou-002"
+        ],
+        "dropped_missing_data": [
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        }
+      },
+      "baseline_b": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-huairou-002",
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "unchecked_recommended": [
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        }
+      },
+      "baseline_c": {
+        "status": "SUCCEEDED",
+        "recommended": [
+          "bj-mentougou-003"
+        ],
+        "status_agrees": true,
+        "verified_agrees": true,
+        "relaxation_applied": true,
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        },
+        "compile_source": "llm_primary",
+        "intent_field_mismatches": []
+      }
+    },
+    {
+      "query_id": "elevation_cap",
+      "baseline_a": {
+        "recommended": [
+          "bj-huairou-002"
+        ],
+        "dropped_missing_data": [
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        }
+      },
+      "baseline_b": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-huairou-002",
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "unchecked_recommended": [
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        }
+      },
+      "baseline_c": {
+        "status": "SUCCEEDED",
+        "recommended": [
+          "bj-huairou-002"
+        ],
+        "status_agrees": true,
+        "verified_agrees": true,
+        "relaxation_applied": false,
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        },
+        "compile_source": "llm_primary",
+        "intent_field_mismatches": []
+      }
+    },
+    {
+      "query_id": "unknown_risk_region",
+      "baseline_a": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-huairou-002",
+          "bj-mentougou-003"
+        ],
+        "dropped_missing_data": [
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [
+            "bj-huairou-002"
+          ],
+          "unverified_recommended": [],
+          "total": 1
+        }
+      },
+      "baseline_b": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "unchecked_recommended": [
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [
+            "bj-miyun-004"
+          ],
+          "total": 1
+        }
+      },
+      "baseline_c": {
+        "status": "INSUFFICIENT_EVIDENCE",
+        "recommended": [],
+        "status_agrees": true,
+        "verified_agrees": true,
+        "relaxation_applied": false,
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        },
+        "compile_source": "llm_primary",
+        "intent_field_mismatches": []
+      }
+    },
+    {
+      "query_id": "no_candidate_region",
+      "baseline_a": {
+        "recommended": [],
+        "dropped_missing_data": [],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        }
+      },
+      "baseline_b": {
+        "recommended": [],
+        "unchecked_recommended": [],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        }
+      },
+      "baseline_c": {
+        "status": "NO_MATCH",
+        "recommended": [],
+        "status_agrees": true,
+        "verified_agrees": true,
+        "relaxation_applied": false,
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        },
+        "compile_source": "llm_primary",
+        "intent_field_mismatches": []
+      }
+    },
+    {
+      "query_id": "missing_location_gate",
+      "baseline_a": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-huairou-002"
+        ],
+        "dropped_missing_data": [
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [
+            "bj-huairou-002"
+          ],
+          "unverified_recommended": [],
+          "total": 1
+        }
+      },
+      "baseline_b": {
+        "recommended": [
+          "bj-yanqing-001",
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "unchecked_recommended": [
+          "bj-mentougou-003",
+          "bj-miyun-004"
+        ],
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [
+            "bj-miyun-004"
+          ],
+          "total": 1
+        }
+      },
+      "baseline_c": {
+        "status": "SUCCEEDED",
+        "recommended": [
+          "bj-yanqing-001"
+        ],
+        "status_agrees": true,
+        "verified_agrees": true,
+        "relaxation_applied": false,
+        "mispass": {
+          "violations": [],
+          "unverified_recommended": [],
+          "total": 0
+        },
+        "compile_source": "rule_extraction",
+        "intent_field_mismatches": []
+      }
+    }
+  ]
+}

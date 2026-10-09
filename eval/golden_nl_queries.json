@@ -1,0 +1,114 @@
+{
+  "spec_version": "golden-nl.v1",
+  "fixture_note": "基于 FakeRouteProvider 默认 fixture（bj-yanqing-001 / bj-huairou-002 含悬崖 / bj-mentougou-003 8.5km / bj-miyun-004 风险证据缺失）。expected_intent 供编译字段准确率核对。",
+  "queries": [
+    {
+      "query_id": "family_full",
+      "query": "周六带8岁孩子去北京延庆徒步，8公里以内，爬升不超过300米，2小时左右，有水源补给，避开悬崖",
+      "scripted_intent": {
+        "location": "北京·延庆",
+        "participants": {"children": true, "child_ages": [8]},
+        "max_distance_km": 8,
+        "max_elevation_gain_m": 300,
+        "max_duration_minutes": 120,
+        "required_facilities": ["water_source"],
+        "avoid_risk_types": ["risk_cliff_exposure"]
+      },
+      "expected_intent": {
+        "location": "北京·延庆",
+        "max_distance_km": 8,
+        "max_elevation_gain_m": 300,
+        "avoid_risk_types": ["risk_cliff_exposure"]
+      },
+      "expected_final": {
+        "status": "SUCCEEDED",
+        "verified_route_ids": ["bj-yanqing-001"]
+      }
+    },
+    {
+      "query_id": "cliff_citywide",
+      "query": "北京周边徒步，10公里以内，爬升400米以内，要避开悬崖",
+      "scripted_intent": {
+        "location": "北京",
+        "max_distance_km": 10,
+        "max_elevation_gain_m": 400,
+        "avoid_risk_types": ["risk_cliff_exposure"]
+      },
+      "expected_intent": {
+        "location": "北京",
+        "max_distance_km": 10,
+        "max_elevation_gain_m": 400,
+        "avoid_risk_types": ["risk_cliff_exposure"]
+      },
+      "expected_final": {
+        "status": "SUCCEEDED",
+        "verified_route_ids": ["bj-yanqing-001", "bj-mentougou-003"]
+      }
+    },
+    {
+      "query_id": "tight_distance",
+      "query": "北京门头沟周边3公里以内的徒步路线",
+      "scripted_intent": {"location": "北京·门头沟", "max_distance_km": 3},
+      "expected_intent": {"location": "北京·门头沟", "max_distance_km": 3},
+      "expected_final": {"status": "NO_MATCH", "verified_route_ids": []}
+    },
+    {
+      "query_id": "relax_authorized",
+      "query": "北京门头沟徒步，8公里以内，爬升300米以内，没有合适的可以放宽到10公里",
+      "scripted_intent": {
+        "location": "北京·门头沟",
+        "max_distance_km": 8,
+        "max_elevation_gain_m": 300,
+        "relaxation": {"max_distance_km": {"authorized": true, "max_value": 10, "order": 0}}
+      },
+      "expected_intent": {"location": "北京·门头沟", "max_distance_km": 8},
+      "expected_final": {
+        "status": "SUCCEEDED",
+        "verified_route_ids": ["bj-mentougou-003"],
+        "relaxation_applied": true
+      }
+    },
+    {
+      "query_id": "elevation_cap",
+      "query": "怀柔周边徒步，爬升不超过200米",
+      "scripted_intent": {"location": "北京·怀柔", "max_elevation_gain_m": 200},
+      "expected_intent": {"location": "北京·怀柔", "max_elevation_gain_m": 200},
+      "expected_final": {"status": "SUCCEEDED", "verified_route_ids": ["bj-huairou-002"]}
+    },
+    {
+      "query_id": "unknown_risk_region",
+      "query": "北京密云徒步，10公里以内，避开悬崖暴露路段",
+      "scripted_intent": {
+        "location": "北京·密云",
+        "max_distance_km": 10,
+        "avoid_risk_types": ["risk_cliff_exposure"]
+      },
+      "expected_intent": {
+        "location": "北京·密云",
+        "max_distance_km": 10,
+        "avoid_risk_types": ["risk_cliff_exposure"]
+      },
+      "expected_final": {"status": "INSUFFICIENT_EVIDENCE", "verified_route_ids": []}
+    },
+    {
+      "query_id": "no_candidate_region",
+      "query": "上海周边8公里以内的徒步路线，避开悬崖",
+      "scripted_intent": {"location": "上海", "max_distance_km": 8, "avoid_risk_types": ["risk_cliff_exposure"]},
+      "expected_intent": {"location": "上海", "max_distance_km": 8},
+      "expected_final": {"status": "NO_MATCH", "verified_route_ids": []}
+    },
+    {
+      "query_id": "missing_location_gate",
+      "query": "推荐一条8公里以内、爬升300米以内的亲子徒步路线，避开悬崖",
+      "scripted_intent": {
+        "location": "",
+        "max_distance_km": 8,
+        "max_elevation_gain_m": 300,
+        "avoid_risk_types": ["risk_cliff_exposure"]
+      },
+      "expected_gate": {"field": "location", "answer": {"location": "北京·延庆"}},
+      "expected_intent": {"max_distance_km": 8, "max_elevation_gain_m": 300},
+      "expected_final": {"status": "SUCCEEDED", "verified_route_ids": ["bj-yanqing-001"]}
+    }
+  ]
+}

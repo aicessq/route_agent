@@ -27,3 +27,6 @@ htmlcov/
 # Secrets and local certificates
 *.pem
 *.key
+
+# 本地密钥目录（真实 API Key，绝不提交）
+secrets/

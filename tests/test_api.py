@@ -27,9 +27,10 @@ class TestPreview:
         assert all(check["status"] == "PASS" for check in checks if check["strength"] == "hard")
 
     def test_preview_rejects_invalid_intent(self, client: TestClient) -> None:
+        # 空地点是合法的"待追问"中间态（由门禁处理）；非法字段仍应 422。
         response = client.post(
             "/api/v1/decisions/preview",
-            json={"intent": {"location": ""}},
+            json={"intent": {"location": "北京", "participants": {"child_ages": [99]}}},
         )
         assert response.status_code == 422
 

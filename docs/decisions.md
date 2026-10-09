@@ -2,6 +2,64 @@
 
 按时间倒序。每条：背景 → 决策 → 理由 → 影响。
 
+## D-019 真实 LLM 密钥只存 secrets/ 目录（不入 git）
+
+- **背景**：阶段 4 接入 Agnes AI（OpenAI 兼容），拿到真实 API Key。
+- **决策**：密钥放 `secrets/llm.env`（.gitignore 排除整个目录）；`Settings` 以
+  env_file 元组加载（secrets 优先于 .env，进程环境变量最优先）；`secrets/README.md`
+  说明轮换方式；`.env.example` 只留占位。
+- **理由**：密钥不入版本控制/日志/报错/对外文档是硬边界；分层优先级让本地密钥
+  覆盖占位配置而不影响 CI（CI 无 secrets → 自动禁用 LLM）。
+- **影响**：Base URL（`https://apihub.agnes-ai.com/v1`）从官方文档确认后写入
+  secrets；业务代码与文档只出现占位符。
+
+## D-018 编译层丢弃模型夹带的无害额外字段，领域模型保持 extra=forbid
+
+- **背景**：真实模型输出偶发夹带额外字段（如解释性键），严格 extra=forbid 导致
+  整单编译失败 → 频繁落入规则降级，覆盖率下降。
+- **决策**：`IntentCompiler._validate` 在校验前把 payload 过滤为
+  `RouteIntent.model_fields` 已知键；领域模型对 API 输入仍 extra=forbid。
+- **理由**：丢弃的键不可能进入意图，安全性等价于拒绝；可用性显著提升。
+  越权语义（relaxation 无授权依据）仍由 `_semantic_check` 拒绝。
+- **影响**：真实模式状态一致率从 6/8 提升到 8/8。
+
+## D-017 放宽授权的语义校验：授权必须可溯源到用户原话
+
+- **背景**：模型可能自行"好心"填 relaxation。
+- **决策**：`_semantic_check` 要求 payload 中出现 relaxation 时，query 必须包含
+  放宽语言标记（"放宽/可以到/接受/没有合适的/适当"），且字段属于可放宽集合；
+  风险字段一票否决。应答端点的 `authorize_relaxation` 是第二条授权入口。
+- **理由**：未授权不放宽是系统不变量；编译与应答两条入口都必须可溯源。
+
+## D-016 Run 级成本用包装客户端计量（RunCostRecorder）
+
+- **背景**：网关/Fake 客户端是共享实例，其内部账本是进程级，不是 Run 级。
+- **决策**：编排器为每个 Run 构造 `RunCostRecorder(共享客户端, item.cost)`；
+  成功按 LLMResult 计 token/延迟，失败按 LLMFailure.kind 记零 token 失败记录。
+- **影响**：报告 `budget.llm` 反映该 Run 的真实模型成本（调用数/token/延迟/失败原因）。
+
+## D-015 location 允许空串作为"待追问"中间态
+
+- **背景**：编译/规则提取可能产出无地点的部分意图；必填字段使中间态无法表达，
+  任务直接 FAILED。
+- **决策**：`RouteIntent.location` 允许空串；Completeness Gate 负责强制补齐后才推进。
+- **理由**：强制点是门禁而非数据模型——中间态必须可表示才能实现 HITL 追问闭环。
+  preview 接口对空地点返回 NO_MATCH + warning（不再 422）。
+
+## D-014 地点归一化匹配（fixture 层）
+
+- **背景**：真实模型输出"北京延庆/怀柔/上海周边"等自然写法，严格子串匹配不到
+  fixture 的"北京·延庆"，导致空候选。
+- **决策**：FakeProvider 匹配前对两侧做归一化（去 `·`/空格、去一个行政后缀
+  市/区/县/省/周边）；评测的地点准确率比较用同样的归一化 + 包含语义。
+- **理由**：这是召回层的写法容错，不改变验证语义；真实 ES 适配器用分析器解决同类问题。
+
+## D-013 编排器只从 QUEUED 进入 RUNNING
+
+- **背景**：run() 无条件置 RUNNING 会覆盖排队期间到达的 CANCEL_REQUESTED（真实竞态）。
+- **决策**：仅 `status == QUEUED` 时置 RUNNING；终态判定在 finalize 统一处理。
+- **影响**：由 `test_cancel_requested_before_finalize` 回归覆盖。
+
 ## D-001 采用 Python FastAPI + asyncio，而非 Rust/Temporal
 
 - **背景**：参考项目为 Rust/Tauri 通用 Agent Runtime；本项目瓶颈在远程数据获取等待。

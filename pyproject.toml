@@ -43,6 +43,8 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 # conftest 需要先注入 sys.path 再导入应用包
 "tests/conftest.py" = ["E402"]
+# Prompt 为中文内容型文本，单行承载完整指令（拆行会改变注入内容）
+"app/services/llm/prompts.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"

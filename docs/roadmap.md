@@ -30,14 +30,19 @@
 - [ ] 七类故障注入测试进 CI
 - [ ] docker compose 全链路（MySQL/Redis/ES + Worker 进程）
 
-## 阶段 4 模型接入与完整评测（1–1.5 周）
+## 阶段 4 模型接入与完整评测 ✅（2026-10-09 完成）
 
-- [ ] Intent Compiler（小模型 + Strict JSON Schema + 语义双检；升级大模型一次）
-- [ ] 规则驱动的 Completeness Gate 追问（≤2 轮）
-- [ ] Bounded Repair（补证据/换候选/已授权放宽/追问/停止；进展度量）
-- [ ] 摘要 LLM 可选通道（模板兜底）
-- [ ] Golden Set + 三组基线对照（固定筛选 / 普通 ReAct / 本方案）
-- [ ] 预注册性能消融实测 + CostReport；结果填入 docs 与简历（只写实测）
+- [x] LLM 网关：OpenAI 兼容（Agnes AI `agnes-2.5-flash`）+ 失败分类 + 可重试一次 + Run 级成本记账
+- [x] Intent Compiler：小模型 + Strict JSON Schema + 语义双检（放宽授权必须来自用户原话）；
+      升级大模型一次 → 规则提取降级梯；编译层丢弃模型夹带的无害额外字段（领域模型仍 extra=forbid）
+- [x] 规则驱动 Completeness Gate 追问（缺地点/缺约束，≤2 轮）+ answers 端点以新 intent_version 恢复
+- [x] Bounded Repair：五动作（补证据/已授权放宽/换候选/追问/停止）+ 服务端前置校验 +
+      进展门（无进展立即停止）+ 确定性策略兜底；LLM 越权提议一律拒绝
+- [x] 摘要 LLM 通道（报告外结论门禁 + 模板兜底）
+- [x] Golden NL Set（8 条）+ 三组基线对照（固定筛选 / 模拟 ReAct / 本方案）
+- [x] CostReport 进报告 budget（token/调用/延迟）
+- [x] 真实模式测评：0 硬约束误通过、8/8 状态、21/21 编译字段；端到端 HTTP 验证（编译/追问/摘要）
+- [ ] 预注册性能消融实测（依赖阶段 2 的 ES 数据与缓存基建，暂缓）
 
 ## 明确不做
 

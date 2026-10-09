@@ -9,16 +9,19 @@ import yaml
 from dotenv import dotenv_values
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# 环境变量文件路径可被 ENV_FILE 覆盖；密钥只放环境变量，不放 yaml。
+# 环境变量文件路径可被 ENV_FILE 覆盖；密钥只放环境变量与本地 secrets/ 目录，不放 yaml。
 _DEFAULT_ENV_FILE = ".env"
+_DEFAULT_SECRETS_FILE = "secrets/llm.env"
 _DEFAULT_CONFIG = "config/app.yaml"
 
 
 class Settings(BaseSettings):
-    """运行时配置：默认值 < config/app.yaml < 环境变量 / .env。"""
+    """运行时配置：默认值 < config/app.yaml < .env < secrets/llm.env < 进程环境变量。"""
 
     model_config = SettingsConfigDict(
-        extra="ignore", env_file=_DEFAULT_ENV_FILE, case_sensitive=False
+        extra="ignore",
+        env_file=(_DEFAULT_ENV_FILE, _DEFAULT_SECRETS_FILE),
+        case_sensitive=False,
     )
 
     app_name: str = "sixfoot-route-agent"
@@ -56,6 +59,9 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_api_key: str = ""
     llm_model: str = ""
+    llm_fallback_model: str = ""
+    llm_timeout_seconds: float = 30.0
+    llm_max_output_tokens: int = 2048
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -76,10 +82,11 @@ def _flatten_sections(data: dict[str, Any]) -> dict[str, Any]:
     return flat
 
 
-def _explicit_env_keys(env_file: Path) -> set[str]:
+def _explicit_env_keys(env_file: Path, secrets_file: Path) -> set[str]:
     keys = {key.lower() for key in os.environ}
-    if env_file.is_file():
-        keys |= {key.lower() for key in dotenv_values(env_file)}
+    for path in (env_file, secrets_file):
+        if path.is_file():
+            keys |= {key.lower() for key in dotenv_values(path)}
     return keys
 
 
@@ -87,8 +94,9 @@ def _explicit_env_keys(env_file: Path) -> set[str]:
 def get_settings() -> Settings:
     config_path = Path(os.environ.get("APP_CONFIG", _DEFAULT_CONFIG))
     env_file = Path(os.environ.get("ENV_FILE", _DEFAULT_ENV_FILE))
+    secrets_file = Path(os.environ.get("SECRETS_FILE", _DEFAULT_SECRETS_FILE))
     yaml_overrides = _flatten_sections(_load_yaml(config_path))
-    # 显式设置的环境变量优先于 yaml，因此只覆盖未被显式给出的键。
-    explicit = _explicit_env_keys(env_file)
+    # 显式设置的环境变量与本地 secrets 优先于 yaml，因此只覆盖未被显式给出的键。
+    explicit = _explicit_env_keys(env_file, secrets_file)
     updates = {key: value for key, value in yaml_overrides.items() if key.lower() not in explicit}
     return Settings(**updates)

@@ -41,17 +41,21 @@ asyncio Worker 池【阶段3】
 DecisionReport（结构化）→ 状态查询 / 按需摘要
 ```
 
-## 3. 当前实现（阶段 1）
+## 3. 当前实现（阶段 1 + 阶段 4）
 
 ```text
 客户端
-  │ POST /api/v1/decisions/preview        POST /api/v1/decisions
+  │ POST /decisions/preview            POST /decisions（query | intent）
   ▼                                        ▼
-DecisionService（同步）            InMemoryDecisionStore（asyncio.create_task）
-  ├─ FakeRouteProvider.search          │  202 + decisionId → 轮询 → 终态
-  ├─ FakeRouteProvider.collect         └  协作式取消（终态幂等）
-  ├─ RouteVerifier（三态判定）
-  └─ DecisionReport
+DecisionService（同步验证）          DecisionOrchestrator（asyncio 任务）
+  ├─ Provider 检索/取证                  ├─ COMPILE_INTENT：LLM 编译（降级梯）
+  ├─ RouteVerifier（三态判定）           │    └─ Agnes AI 网关 / Fake / 规则提取
+  └─ DecisionReport                      ├─ COMPLETENESS_GATE：规则追问（≤2 轮）
+                                         │    └─ WAITING_USER → answers 恢复
+                                         ├─ RETRIEVE_VERIFY：decide()
+                                         ├─ REPAIR：五动作 + 前置校验 + 进展门
+                                         │    └─ LLM 提议（越权即拒）/ 确定性兜底
+                                         └─ FINALIZED：报告 + CostReport（budget.llm）
 ```
 
 - 领域层 `app/domain/` 是全链路的唯一语义来源：Intent、Evidence、Verifier、FactPolicy、Report。
@@ -122,7 +126,7 @@ QUEUED → RUNNING → SUCCEEDED / NO_MATCH / INSUFFICIENT_EVIDENCE / FAILED
 | 取证 Provider 故障 | `INSUFFICIENT_EVIDENCE` + warning，不伪造通过 | ✅ 已实现 |
 | 搜索 Provider 故障 | Run `FAILED`（依赖失败，非业务无结果） | ✅ 已实现 |
 | 无可验证约束 | 不做"已验证"声明 | ✅ 已实现 |
-| LLM 不可用 | 规则/表单降级，结构化报告照常产出 | 阶段 4 |
+| LLM 不可用 | 规则/表单降级，结构化报告照常产出 | ✅ 已实现（限流实测：0 误通过保持，覆盖 6/8） |
 | 关键工具超时 | 按事实 criticality 降级；硬约束证据缺失不得 VERIFIED | 阶段 3 |
 | Worker 崩溃 | Outbox+租约+checkpoint 阶段级续跑 | 阶段 3 |
 

@@ -7,7 +7,7 @@
 
 | 字段 | 类型 | 约束强度 | 说明 |
 | --- | --- | --- | --- |
-| `location` | string(1..200) | 必填 | 地点名，用于候选召回 |
+| `location` | string(0..200) | 必填* | 地点名，用于候选召回。允许空串作为"待追问"中间态，由 Completeness Gate 强制补齐 |
 | `travel_date` | date? | 上下文 | 出行日（天气判定需要） |
 | `participants` | object | 上下文 | `children: bool`、`child_ages: int[]`（0–18） |
 | `max_distance_km` | float?(0,500] | 硬 | 距离上限 |
