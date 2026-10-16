@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>路线决策 Agent · 本地测试台</title>
+<style>
+  /* 自包含样式：不引外部资源，保证离线可用 */
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --border: #e3e6ea;
+    --text: #1f2328; --muted: #6a737d; --accent: #2f6fed;
+    --pass: #1a7f37; --fail: #cf222e; --unknown: #8250df; --warn: #9a6700;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+         background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+  header h1 { font-size: 20px; margin: 0; }
+  header p { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+          padding: 16px; margin-top: 16px; }
+  .tabs { display: flex; gap: 8px; margin-top: 12px; }
+  .tab { padding: 6px 14px; border: 1px solid var(--border); border-radius: 999px;
+         background: #fff; cursor: pointer; font-size: 13px; }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  textarea, input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+         border-radius: 8px; font-size: 14px; font-family: inherit; }
+  textarea { min-height: 84px; resize: vertical; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip { font-size: 12px; padding: 4px 10px; border: 1px dashed var(--border);
+          border-radius: 999px; cursor: pointer; color: var(--muted); background: #fff; }
+  .chip:hover { color: var(--accent); border-color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+  .checks { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
+  .checks label { cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+         padding: 9px 20px; font-size: 14px; cursor: pointer; margin-top: 12px; }
+  button.primary:disabled { opacity: .5; cursor: not-allowed; }
+  button.ghost { background: #fff; color: var(--text); border: 1px solid var(--border);
+         border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; margin-top: 12px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px;
+           font-weight: 600; }
+  .st-QUEUED, .st-RUNNING, .st-CANCEL_REQUESTED { background: #eef1f5; color: var(--muted); }
+  .st-WAITING_USER { background: #fff8c5; color: var(--warn); }
+  .st-SUCCEEDED { background: #dafbe1; color: var(--pass); }
+  .st-NO_MATCH { background: #fff1e5; color: #bc4c00; }
+  .st-INSUFFICIENT_EVIDENCE { background: #fbefff; color: var(--unknown); }
+  .st-CANCELLED { background: #eef1f5; color: var(--muted); }
+  .st-FAILED { background: #ffebe9; color: var(--fail); }
+  .steps { display: flex; gap: 4px; flex-wrap: wrap; margin: 8px 0; }
+  .step { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: #eef1f5;
+          color: var(--muted); font-family: ui-monospace, monospace; }
+  .step.now { background: #ddf0ff; color: var(--accent); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .ck-PASS { color: var(--pass); font-weight: 600; }
+  .ck-FAIL { color: var(--fail); font-weight: 600; }
+  .ck-UNKNOWN { color: var(--unknown); font-weight: 600; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .mono { font-family: ui-monospace, monospace; font-size: 12px; }
+  .route { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 10px; }
+  .route.ok { border-color: #b7dfc1; background: #f6fef8; }
+  .route.head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .route.head b { font-size: 14px; }
+  .warn-item { color: var(--warn); font-size: 13px; }
+  .ask { border: 1px solid #e4d24a; background: #fffdf0; }
+  .summary-box { background: #f0f6ff; border: 1px solid #cfe1ff; border-radius: 8px;
+                 padding: 10px 12px; margin-top: 10px; white-space: pre-wrap; }
+  .error-box { background: #ffebe9; border: 1px solid #ffc1c0; border-radius: 8px;
+               padding: 10px 12px; margin-top: 10px; color: var(--fail); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>约束验证型路线决策 Agent · 本地测试台</h1>
+    <p id="subtitle">输入徒步需求 → 检索候选 → 逐条约束核验（PASS / FAIL / UNKNOWN）→ 带证据链的报告。</p>
+  </header>
+
+  <!-- 输入区：自然语言 / 结构化表单 二选一 -->
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" data-mode="nl">自然语言</div>
+      <div class="tab" data-mode="form">结构化表单</div>
+    </div>
+
+    <div id="nl-pane" style="margin-top:12px">
+      <textarea id="query" placeholder="例如：带8岁孩子在北京延庆找一条8公里以内、爬升不超过300米、避开悬崖、2小时内走完、沿途有水源和商店的徒步路线"></textarea>
+      <div class="chips" id="presets"></div>
+    </div>
+
+    <div id="form-pane" class="hidden" style="margin-top:12px">
+      <div class="grid">
+        <div class="field"><label>地点（区县级，如 北京·延庆）</label><input id="f_location" placeholder="北京·延庆"></div>
+        <div class="field"><label>最大距离 km</label><input id="f_dist" type="number" min="0.1" step="0.1" placeholder="8"></div>
+        <div class="field"><label>最大爬升 m</label><input id="f_elev" type="number" min="0.1" step="1" placeholder="300"></div>
+        <div class="field"><label>时长上限（分钟）</label><input id="f_dur" type="number" min="1" placeholder="120"></div>
+        <div class="field"><label>最低评分</label><input id="f_rating" type="number" min="0" max="5" step="0.1" placeholder="4.0"></div>
+        <div class="field"><label>孩子年龄（多个用逗号分隔）</label><input id="f_ages" placeholder="8"></div>
+      </div>
+      <div style="margin-top:10px" class="field"><label style="margin-bottom:6px">避开的风险（硬约束）</label>
+        <div class="checks" id="f_risks"></div></div>
+      <div style="margin-top:10px" class="field"><label style="margin-bottom:6px">必须设施（软偏好）</label>
+        <div class="checks" id="f_facs"></div></div>
+    </div>
+
+    <button class="primary" id="submitBtn">开始决策</button>
+  </div>
+
+  <!-- 运行状态区 -->
+  <div class="card hidden" id="run-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <div><span class="badge" id="run-status">QUEUED</span>
+           <span class="mono muted" id="run-id" style="margin-left:8px"></span></div>
+      <span class="muted" id="run-meta"></span>
+    </div>
+    <div class="steps" id="run-steps"></div>
+    <button class="ghost hidden" id="cancelBtn">取消任务</button>
+
+    <!-- 追问卡片：WAITING_USER 时显示 -->
+    <div class="route ask hidden" id="ask-box" style="margin-top:10px">
+      <b id="ask-text"></b>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="ask-input" placeholder="输入回答…">
+        <button class="primary" id="askBtn" style="margin-top:0">提交回答</button>
+      </div>
+    </div>
+
+    <div class="error-box hidden" id="error-box"></div>
+  </div>
+
+  <!-- 报告区 -->
+  <div class="card hidden" id="report-card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+      <h2 style="margin:0;font-size:16px" id="report-title"></h2>
+      <button class="ghost" id="summaryBtn" style="margin-top:0">生成摘要</button>
+    </div>
+    <div id="report-body"></div>
+    <div class="summary-box hidden" id="summary-box"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+// 与后端契约对应：steps 顺序来自 app/runtime/state.py 的 StepName。
+const STEPS = ["COMPILE_INTENT", "RETRIEVE_CANDIDATES", "COLLECT_EVIDENCE", "VERIFY", "REPAIR", "FINALIZE"];
+const TERMINAL = new Set(["SUCCEEDED", "NO_MATCH", "INSUFFICIENT_EVIDENCE", "CANCELLED", "FAILED"]);
+const RISK_LABELS = {
+  risk_cliff_exposure: "悬崖暴露", risk_river_crossing: "涉水渡河", risk_road_closure: "道路封闭",
+  risk_landslide: "滑坡", risk_ice: "冰面",
+};
+const FAC_LABELS = { water_source: "水源", store: "商店", restroom: "洗手间", camp: "营地" };
+const KIND_LABELS = { curated_route: "人工精选", public_track: "公开轨迹", synthetic_fixture: "合成数据" };
+
+const $ = (id) => document.getElementById(id);
+let mode = "nl";
+let currentId = null;
+let pollTimer = null;
+
+// 预置例句：覆盖 通过 / 追问 / 多候选 / 证据缺失(UNKNOWN) 四类分支。
+const PRESETS = [
+  { label: "亲子·延庆（通过）", text: "带8岁孩子在北京延庆找一条8公里以内、爬升不超过300米、避开悬崖、2小时内走完、沿途有水源和商店的徒步路线" },
+  { label: "缺地点（触发追问）", text: "找一条10公里以内的轻松徒步路线" },
+  { label: "全城避悬崖", text: "全北京找避开悬崖的徒步路线" },
+  { label: "密云露营（风险证据缺失→UNKNOWN）", text: "北京密云找一条5公里左右、避开悬崖、有露营点的路线" },
+];
+
+// 副标题动态追加当前候选池来源（装配开关见 config/app.yaml 的 search_provider）。
+fetch("/health").then((r) => r.json()).then((p) => {
+  const provider = p.data && p.data.search_provider;
+  const pool = provider === "elasticsearch"
+    ? "候选池：本地 Elasticsearch 索引（合成数据）"
+    : "候选池：Fake Provider 4 条 fixture 路线";
+  $("subtitle").textContent += " " + pool + "；未配置 LLM 时自然语言走规则提取。";
+});
+
+// ---------- 输入区初始化 ----------
+PRESETS.forEach((p) => {
+  const el = document.createElement("div");
+  el.className = "chip"; el.textContent = p.label;
+  el.onclick = () => { $("query").value = p.text; };
+  $("presets").appendChild(el);
+});
+
+const RISK_KEYS = Object.keys(RISK_LABELS), FAC_KEYS = Object.keys(FAC_LABELS);
+RISK_KEYS.forEach((k) => {
+  const l = document.createElement("label");
+  l.innerHTML = `<input type="checkbox" value="${k}"> ${RISK_LABELS[k]}`;
+  $("f_risks").appendChild(l);
+});
+FAC_KEYS.forEach((k) => {
+  const l = document.createElement("label");
+  l.innerHTML = `<input type="checkbox" value="${k}"> ${FAC_LABELS[k]}`;
+  $("f_facs").appendChild(l);
+});
+
+document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
+  mode = t.dataset.mode;
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === t));
+  $("nl-pane").classList.toggle("hidden", mode !== "nl");
+  $("form-pane").classList.toggle("hidden", mode !== "form");
+});
+
+// ---------- 提交 ----------
+$("submitBtn").onclick = async () => {
+  let body;
+  if (mode === "nl") {
+    const q = $("query").value.trim();
+    if (!q) return showError("请输入自然语言需求，或点一个预置例句。");
+    body = { query: q };
+  } else {
+    body = { intent: buildIntent() };
+    if (!body.intent.location) return showError("结构化表单需要填写地点（完备性门会拦截缺地点请求）。");
+  }
+  // 幂等键每次新生成：同一请求重放语义留给后端，测试页每次都是新任务。
+  const key = "ui-" + Math.random().toString(36).slice(2, 12);
+  resetView();
+  try {
+    const res = await fetch("/api/v1/decisions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Idempotency-Key": key },
+      body: JSON.stringify(body),
+    });
+    const payload = await res.json();
+    if (!res.ok) return showError(payload.message || "创建失败");
+    currentId = payload.data.decision_id;
+    $("run-card").classList.remove("hidden");
+    $("run-id").textContent = currentId.slice(0, 12) + "…";
+    $("cancelBtn").classList.remove("hidden");
+    schedulePoll(payload.data.poll_after_ms || 500);
+  } catch (e) { showError("网络错误：" + e.message); }
+};
+
+function buildIntent() {
+  const num = (id) => { const v = $(id).value.trim(); return v === "" ? null : Number(v); };
+  const picked = (boxId) => [...$(boxId).querySelectorAll("input:checked")].map((i) => i.value);
+  const intent = {};
+  const loc = $("f_location").value.trim(); if (loc) intent.location = loc;
+  const d = num("f_dist"); if (d !== null) intent.max_distance_km = d;
+  const e = num("f_elev"); if (e !== null) intent.max_elevation_gain_m = e;
+  const du = num("f_dur"); if (du !== null) intent.max_duration_minutes = du;
+  const r = num("f_rating"); if (r !== null) intent.min_rating = r;
+  if (picked("f_risks").length) intent.avoid_risk_types = picked("f_risks");
+  if (picked("f_facs").length) intent.required_facilities = picked("f_facs");
+  const ages = $("f_ages").value.trim();
+  if (ages) {
+    const list = ages.split(/[,，\s]+/).map(Number).filter((n) => !Number.isNaN(n) && n >= 0);
+    if (list.length) intent.participants = { children: true, child_ages: list };
+  }
+  return intent;
+}
+
+// ---------- 轮询 ----------
+function schedulePoll(ms) {
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(poll, ms);
+}
+
+async function poll() {
+  if (!currentId) return;
+  try {
+    const res = await fetch("/api/v1/decisions/" + currentId);
+    const payload = await res.json();
+    if (!res.ok) return showError(payload.message || "查询失败");
+    renderRun(payload.data);
+    const d = payload.data;
+    if (d.status === "WAITING_USER") { renderQuestion(d.question); return; }
+    if (TERMINAL.has(d.status)) {
+      $("cancelBtn").classList.add("hidden");
+      if (d.report) renderReport(d);
+      if (d.error) showError(d.error);
+      return;
+    }
+    schedulePoll(d.poll_after_ms || 800);
+  } catch (e) { showError("网络错误：" + e.message); }
+}
+
+function renderRun(d) {
+  const badge = $("run-status");
+  badge.textContent = d.status;
+  badge.className = "badge st-" + d.status;
+  const meta = [];
+  if (d.compile_source) meta.push("编译: " + d.compile_source);
+  if (d.intent_version) meta.push("intent v" + d.intent_version);
+  $("run-meta").textContent = meta.join(" · ");
+  $("run-steps").innerHTML = STEPS.map((s) =>
+    `<span class="step${s === d.current_step ? " now" : ""}">${s}</span>`).join("");
+}
+
+function renderQuestion(q) {
+  if (!q) return;
+  $("ask-box").classList.remove("hidden");
+  $("ask-text").textContent = "【追问】" + (q.text || "请补充信息");
+  $("ask-input").placeholder = "补充 " + (q.field || "信息") + "…";
+}
+
+$("askBtn").onclick = async () => {
+  const q = { answers: {} };
+  const field = $("ask-input").placeholder.includes("location") ? "location" : "location";
+  q.answers[field] = $("ask-input").value.trim();
+  if (!q.answers[field]) return showError("请先输入回答。");
+  const res = await fetch(`/api/v1/decisions/${currentId}/answers`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(q),
+  });
+  const payload = await res.json();
+  if (!res.ok) return showError(payload.message || "回答提交失败");
+  $("ask-box").classList.add("hidden");
+  $("ask-input").value = "";
+  renderRun({ status: "QUEUED", current_step: "COMPILE_INTENT" });
+  schedulePoll(payload.data.poll_after_ms || 500);
+};
+
+$("cancelBtn").onclick = async () => {
+  clearTimeout(pollTimer);
+  const res = await fetch("/api/v1/decisions/" + currentId, { method: "DELETE" });
+  const payload = await res.json();
+  if (res.ok) { renderRun({ status: payload.data.status || "CANCELLED", current_step: "FINALIZE" }); }
+  $("cancelBtn").classList.add("hidden");
+};
+
+// ---------- 报告渲染 ----------
+function renderReport(run) {
+  const r = run.report;
+  $("report-card").classList.remove("hidden");
+  $("report-title").innerHTML =
+    `<span class="badge st-${run.status}">${run.status}</span>` +
+    ` <span style="font-size:13px;color:var(--muted)">${r.status}</span>`;
+  const parts = [];
+  if (r.verified_route_ids && r.verified_route_ids.length)
+    parts.push(`<div class="muted">推荐：${r.verified_route_ids.join("、")}</div>`);
+
+  for (const c of r.candidates || []) {
+    const rows = (c.checks || []).map((k) => {
+      const label = RISK_LABELS[k.constraint] || FAC_LABELS[k.constraint] ||
+        ({ max_distance_km: "最大距离", max_elevation_gain_m: "最大爬升",
+           max_duration_minutes: "时长上限", min_rating: "最低评分",
+           avoid_risk_types: "避开风险", required_facilities: "必须设施" }[k.constraint] || k.constraint);
+      const actual = Array.isArray(k.actual) ? (k.actual.length ? k.actual.join(", ") : "无")
+        : (k.actual ?? "—");
+      const expected = Array.isArray(k.expected) ? k.expected.join(", ") : (k.expected ?? "—");
+      return `<tr>
+        <td>${label}<span class="muted">（${k.strength === "hard" ? "硬" : "软"}）</span></td>
+        <td class="ck-${k.status}">${k.status}</td>
+        <td>${fmt(expected)} → ${fmt(actual)}</td>
+        <td class="muted">${k.reason || ""}${k.stale ? " <b>[证据过期]</b>" : ""}</td>
+      </tr>`;
+    }).join("");
+    parts.push(`<div class="route${c.hard_pass ? " ok" : ""}">
+      <div class="route.head">
+        <b>${esc(c.title || c.route_id)}</b>
+        <span class="muted">${KIND_LABELS[c.source_kind] || c.source_kind} · ${c.route_id}
+          ${c.hard_pass ? "✅ 硬约束通过" : "❌ 硬约束未通过"} · 软偏好 ${(c.soft_score ?? 0) * 100 | 0}%</span>
+      </div>
+      <table><tr><th>约束</th><th>判定</th><th>期望 → 实际</th><th>说明</th></tr>${rows}</table>
+    </div>`);
+  }
+
+  if (r.warnings && r.warnings.length)
+    parts.push(`<div style="margin-top:10px">${r.warnings.map((w) =>
+      `<div class="warn-item">⚠ ${esc(typeof w === "string" ? w : (w.message || JSON.stringify(w)))}</div>`).join("")}</div>`);
+
+  const b = r.budget || {};
+  parts.push(`<div class="muted" style="margin-top:10px">候选 ${b.candidate_count ?? "—"} · 事实类型 ${b.fact_type_count ?? "—"} · 证据 ${b.evidence_count ?? "—"} · 修复轮次 ${b.repair_rounds ?? 0} · 编译 ${b.compile_source || run.compile_source || "—"}</div>`);
+  $("report-body").innerHTML = parts.join("");
+}
+
+$("summaryBtn").onclick = async () => {
+  const res = await fetch(`/api/v1/decisions/${currentId}/summary`, { method: "POST" });
+  const payload = await res.json();
+  if (!res.ok) return showError(payload.message || "摘要生成失败");
+  const box = $("summary-box");
+  box.classList.remove("hidden");
+  box.textContent = payload.data.summary + "\n（通道: " + payload.data.channel + "）";
+};
+
+// ---------- 工具 ----------
+function fmt(v) { return esc(String(v)); }
+function esc(s) { return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function showError(msg) { const b = $("error-box"); b.textContent = msg; b.classList.remove("hidden"); }
+function resetView() {
+  clearTimeout(pollTimer); currentId = null;
+  ["run-card", "report-card", "ask-box", "summary-box", "error-box"].forEach((id) => $(id).classList.add("hidden"));
+  $("report-body").innerHTML = ""; $("run-steps").innerHTML = "";
+}
+</script>
+</body>
+</html>

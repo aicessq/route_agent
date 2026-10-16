@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     lease_seconds: int = 30
     heartbeat_seconds: int = 10
 
+    search_provider: str = "fake"
     search_timeout_seconds: float = 2.0
     search_max_page_size: int = 50
     search_reserved_concurrency: int = 5

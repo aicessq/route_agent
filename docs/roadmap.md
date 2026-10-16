@@ -11,15 +11,21 @@
 - [x] MySQL 表模型 + 仓储 + Alembic 首迁移（SQLite 验证）
 - [x] 57 项测试；Golden Query 测评 10/10；ruff 零告警
 
-## 阶段 2 检索链路与数据规模（2 周）
+## 阶段 2 检索链路与数据规模（2 周；部分完成 2026-10-12）
 
 - [ ] 本地 ES 10 万级索引（真实种子 + 合成扩增，许可与生成版本入仓）
-- [ ] ElasticsearchRouteProvider.search 接入 + 契约测试
+      → 进展：10,000 条确定性合成已灌入本地索引（`eval/synthetic.py` + `scripts/es_seed_synthetic.py`）；
+        10 万级与真实种子提取未做
+- [x] ElasticsearchRouteProvider 接入 + 契约测试
+      → search（归一化 + 分词 AND 地点匹配、缺索引字段候选保留进验证层）与
+        collect（分批 `_mget`，缺失 → UNAVAILABLE）均已实现；语义抽为纯函数离线可测
 - [ ] 统一批量 Evidence Gateway（逐事实状态、批上限、响应体上限）
+      → 进展：collect 通道可用，但为"索引即证据源"原型简化；独立网关与响应体上限未做
 - [ ] 两级缓存（版本化 key + validUntil）+ singleflight
 - [ ] Top-K 漏斗 + 早停；离线全量上界校准最小 K
 - [ ] 分层限流背压（用户配额、Provider semaphore、快速拒绝）
 - [ ] 压测脚本（1/10/25/50/100 阶梯；冷/热缓存分离报告）
+      → 附注：性能消融的数据基建（ES 1 万条）已就绪，缓存/压测基建仍缺
 
 ## 阶段 3 持久化运行时（1–1.5 周）
 

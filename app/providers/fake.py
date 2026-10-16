@@ -8,6 +8,10 @@ from app.domain.evidence import EvidenceRecord, FactStatus, FactType
 from app.domain.intent import FacilityType, RiskType, RouteIntent
 from app.domain.routes import RouteCandidate, RouteSourceKind
 from app.providers.contracts import EvidenceProvider, SearchProvider
+from app.providers.location import normalize_location
+
+# 历史别名：脚本（run_eval_phase4 等）按 _normalize_location 引用，保持兼容。
+_normalize_location = normalize_location
 
 
 class FakeRouteProvider(SearchProvider, EvidenceProvider):
@@ -63,16 +67,6 @@ class FakeRouteProvider(SearchProvider, EvidenceProvider):
     async def _delay(self) -> None:
         if self.delay_seconds > 0:
             await asyncio.sleep(self.delay_seconds)
-
-
-def _normalize_location(location: str) -> str:
-    """去掉分隔符与行政后缀，保留可比较的核心地名。"""
-    normalized = location.replace("·", "").replace(" ", "").casefold()
-    for suffix in ("周边", "市", "区", "县", "省"):
-        if normalized.endswith(suffix) and len(normalized) > len(suffix):
-            normalized = normalized[: -len(suffix)]
-            break
-    return normalized
 
 
 def default_candidates() -> list[RouteCandidate]:

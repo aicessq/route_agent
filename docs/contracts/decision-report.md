@@ -74,5 +74,5 @@ INSUFFICIENT_EVIDENCE；否则 NO_MATCH。无可验证约束 → INSUFFICIENT_EV
 ## 摘要（懒生成）
 
 `POST /decisions/{id}/summary` 在用户查看时才生成并绑定报告指纹；
-报告变化后旧摘要不可复用。阶段 1 为确定性模板；阶段 4 可选 LLM，
-且 LLM 摘要须通过"不得引入报告外结论"的校验。
+报告变化后旧摘要不可复用。摘要通道 `llm | template`（已实现）：LLM 优先，
+须通过"不得引入报告外结论"的校验，失败/超长自动回落确定性模板。

@@ -17,5 +17,7 @@ async def health(request: Request) -> dict:
             "app": settings.app_name,
             "environment": settings.app_env,
             "version": "0.1.0",
+            # 候选池装配开关：测试页据此展示当前数据来源。
+            "search_provider": settings.search_provider,
         }
     )

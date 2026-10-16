@@ -31,8 +31,15 @@ python3 -m venv .venv
 # 2) 跑测试
 .venv/bin/python -m pytest -q
 
-# 3) 启动服务（Fake Provider 驱动，无需外部依赖）
+# 3) 启动服务（默认 Fake Provider 驱动，无需外部依赖）
 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 18230
+
+# 3.5) 打开本地测试页（浏览器访问，自包含无外部依赖）
+#   http://127.0.0.1:18230/ui/
+
+# 3.7) （可选）切换到 ES 候选池：灌 1 万条确定性合成路线后用 SEARCH_PROVIDER 启动
+.venv/bin/python scripts/es_seed_synthetic.py --count 10000   # 幂等重建本地 ES 索引
+SEARCH_PROVIDER=elasticsearch .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 18230
 
 # 4) 试一次自然语言决策（未配置模型时走规则编译，配置后走真实 LLM）
 curl -s -X POST http://127.0.0.1:18230/api/v1/decisions \
@@ -40,9 +47,9 @@ curl -s -X POST http://127.0.0.1:18230/api/v1/decisions \
   -d '{"query":"周六带8岁孩子去北京延庆徒步，8公里以内，爬升不超过300米，避开悬崖"}'
 
 # 5) 真实模型接入（Agnes AI，OpenAI 兼容）：密钥只放本地 secrets/，不入 git
-cp -n secrets/README.md . 2>/dev/null; mkdir -p secrets
+mkdir -p secrets
 cat > secrets/llm.env <<'EOF2'
-LLM_BASE_URL=<从官方文档确认>
+LLM_BASE_URL=https://apihub.agnes-ai.com/v1   # 已按官方文档确认（2026-10-12）
 LLM_API_KEY=<你的密钥>
 LLM_MODEL=agnes-2.5-flash
 EOF2
@@ -75,19 +82,20 @@ EOF2
 ```
 app/
   domain/        # 领域契约：RouteIntent / Evidence / Verifier / Report / FactPolicy
-  providers/     # SearchProvider / EvidenceProvider 协议 + Fake 与 ES 适配器
+  providers/     # SearchProvider / EvidenceProvider 协议 + Fake 与 ES 适配器 + 地点归一化
   services/      # DecisionService / IntentCompiler / CompletenessGate / Repair / Orchestrator / 摘要
   services/llm/  # LLM 网关（OpenAI 兼容）+ Fake 客户端 + Prompt v1 + Run 成本记账
   api/           # FastAPI 路由与响应信封
   runtime/       # Run 状态机、内存任务存储（阶段 3 替换为 MySQL+Outbox+Worker）
   repositories/  # SQLAlchemy 模型与仓储（决策/运行/步骤/证据/调用账本/Outbox）
   schemas/       # API 严格 DTO
+static/          # 本地测试页（/ui/ 挂载，自包含开发自测工具，非产品 UI）
 migrations/      # Alembic 首迁移
-tests/           # 137 项测试：领域层 / 编译器 / 门禁 / 修复 / 编排 / API / 仓储
-eval/            # 黄金查询集 + NL 集 + 三组基线实现与结果
-scripts/         # run_eval.py / run_eval_phase4.py / llm_smoke.py
+tests/           # 153 项测试：领域层 / 编译器 / 门禁 / 修复 / 编排 / API / 仓储 / ES 契约 / 合成数据
+eval/            # 黄金查询集 + NL 集 + 三组基线 + 确定性合成数据生成器（synthetic.py）+ 结果
+scripts/         # run_eval.py / run_eval_phase4.py / llm_smoke.py / es_seed_synthetic.py
 secrets/         # 本地密钥（gitignore；含真实 Agnes API Key，绝不提交）
-docs/            # 架构 / 设计冻结 / 契约 / API / 基准 / 路线图
+docs/            # 架构 / 设计冻结 / 契约 / API / 基准 / 路线图 / 学习指南
 ```
 
 ## 当前状态（阶段 1 + 阶段 4 已完成）
@@ -99,13 +107,20 @@ docs/            # 架构 / 设计冻结 / 契约 / API / 基准 / 路线图
   - 有界 Repair：五个枚举动作（补证据/已授权放宽/换候选/追问/停止）+ 服务端前置校验 +
     进展门 + 确定性策略兜底；LLM 越权提议一律拒绝；
   - LLM 摘要通道：报告外结论门禁 + 模板兜底；Run 级 CostReport（token/调用/延迟）进报告 budget。
-- 137 项 pytest 全绿；ruff 零告警。
+- 153 项 pytest 全绿；ruff 零告警。
 - 测评（均含"硬约束误通过必须为 0"门槛）：
   - 阶段 1 黄金查询：10/10，0 误通过，确定性复现。
   - 阶段 4 三组基线（FakeLLM 确定性）：固定筛选误通过 4、模拟 ReAct 误通过 4、**本方案 0**，8/8。
   - 阶段 4 真实 Agnes 模式：**0 误通过**，状态 8/8，编译字段准确率 21/21（含 1 条规则降级仍走通追问闭环）。
   - 限流观察：真实服务连跑会触发限流，全失败时降级梯保住 0 误通过与 6/8 覆盖（见 works_log）。
 - 异步任务骨架：202 + 轮询 + 幂等键 + 协作式取消（内存实现，MySQL 持久化为阶段 3）。
+- **阶段 2 部分（2026-10-12）：ES 检索通道已接入**：
+  - 确定性合成数据 10,000 条灌入本地 ES（`eval/synthetic.py` 生成器 + `scripts/es_seed_synthetic.py` 灌库）；
+  - `ElasticsearchRouteProvider` search/collect 双通道实现：location 分词 AND 匹配（城市级/区县级）、
+    缺索引字段候选保留进验证层判 UNKNOWN（不在检索层无声丢弃）、分批 `_mget` 批量取证（索引即证据源的原型简化）；
+  - 装配开关 `search_provider: fake | elasticsearch`（config/app.yaml / 环境变量）；
+  - 本地测试页 `static/index.html`（挂载 `/ui/`）：自然语言/结构化表单、追问应答、三态报告渲染、摘要、取消。
+  - 未完成：两级缓存、Top-K 漏斗校准、限流背压、压测（见 roadmap）。
 
 阶段 2/3（ES 10 万级索引、批量 Evidence Gateway、两级缓存、Outbox/Worker/故障注入）见 [docs/roadmap.md](docs/roadmap.md)。
 
@@ -118,6 +133,8 @@ docs/            # 架构 / 设计冻结 / 契约 / API / 基准 / 路线图
 - 基准规范：[docs/benchmark/benchmark-spec.md](docs/benchmark/benchmark-spec.md)
 - 技术决策记录：[docs/decisions.md](docs/decisions.md)
 - 路线图：[docs/roadmap.md](docs/roadmap.md)
+- 项目状态速览（接手入口）：[docs/STATUS.md](docs/STATUS.md)
+- 学习指南（阅读路径/实验清单/自测题）：[docs/LEARNING.md](docs/LEARNING.md)
 - 数据与许可：[data/README.md](data/README.md)
 
 ## 边界声明

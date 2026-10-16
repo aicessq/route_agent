@@ -1,6 +1,6 @@
 # 架构文档
 
-> 版本：阶段 1（2026-09-25）。本文描述目标架构与当前实现状态的对应关系；
+> 版本：2026-10-12（阶段 1+4 完成，阶段 2 部分）。本文描述目标架构与当前实现状态的对应关系；
 > 标注【阶段 N】的模块尚未实现，属于 [roadmap](roadmap.md) 范围。
 
 ## 1. 系统定位
@@ -60,9 +60,22 @@ DecisionService（同步验证）          DecisionOrchestrator（asyncio 任务
 
 - 领域层 `app/domain/` 是全链路的唯一语义来源：Intent、Evidence、Verifier、FactPolicy、Report。
 - `app/providers/` 以 Protocol 定义 SearchProvider/EvidenceProvider；Fake 与 ES 适配器同构，
-  未来替换为内部服务 Adapter 时不改上层。
-- `app/repositories/` 已定义 MySQL 表模型与仓储语义（租约领取、Outbox 领取、证据批量 upsert），
-  测试用 SQLite 内存库驱动同一套 SQL 语义；**API 当前仍使用内存存储**，持久化接线属于阶段 3。
+  未来替换为内部服务 Adapter 时不改上层。地点归一化为共享模块 `app/providers/location.py`
+  （Fake 与 ES 通道用同一套写法容错）。
+- **检索通道装配开关**：`search_provider: fake | elasticsearch`（`config/app.yaml`，环境变量
+  `SEARCH_PROVIDER` 可覆盖）。ES 通道检索 10,000 条确定性合成路线（`eval/synthetic.py` 生成、
+  `scripts/es_seed_synthetic.py` 灌入本地索引）；`/health` 暴露当前装配，供测试页展示。
+- **检索召回语义**（ES 通道）：意图地点经归一化后以分词 `match + operator=and` 召回，
+  城市级（"北京"）与区县级（"延庆"/"北京延庆"）均可命中；距离/爬升阈值过滤用
+  `should(range, 缺字段)` 形态——**超阈值候选在检索层淘汰，缺数据候选保留进入验证层判
+  UNKNOWN**，不在检索层无声丢弃。
+- **证据通道现状**：`ElasticsearchRouteProvider.collect` 已实现（分批 `_mget`，字段缺失 →
+  `UNAVAILABLE`；当前为"索引即证据源"的原型简化，动态过期/冲突由 Fake 注入场景覆盖，
+  阶段 2 由批量 Evidence Gateway 替换）。`app/repositories/` 已定义 MySQL 表模型与仓储语义
+  （租约领取、Outbox 领取、证据批量 upsert），测试用 SQLite 内存库驱动同一套 SQL 语义；
+  **API 当前仍使用内存存储**，持久化接线属于阶段 3。
+- 本地测试页 `static/index.html`（挂载 `/ui/`）：开发自测工具，覆盖自然语言/结构化表单、
+  追问应答、三态报告渲染、摘要与取消；不是产品 UI。
 
 ## 4. 模块边界与职责
 
@@ -73,7 +86,8 @@ DecisionService（同步验证）          DecisionOrchestrator（asyncio 任务
 | `app/domain/policies.py` | FactPolicy 注册表：单位、criticality、宽限期、来源优先级 | — |
 | `app/domain/verifier.py` | 三态确定性判定；硬约束 UNKNOWN 不通过 | 不调模型、不发网络请求 |
 | `app/services/decision_service.py` | 检索→取证→验证→报告编排；依赖隔离 | 不做 Repair 循环（阶段 4） |
-| `app/providers/*` | 类型化数据适配；Fake 支持故障注入 | 不暴露 SQL/DSL/任意 URL 给模型 |
+| `app/providers/*` | 类型化数据适配；Fake 支持故障注入；ES 适配器 search/collect 已实现 | 不暴露 SQL/DSL/任意 URL 给模型 |
+| `app/providers/location.py` | 地点归一化（共享，检索层写法容错） | 不改变意图原文与验证语义 |
 | `app/api/*` | 严格 DTO、幂等键、统一信封 | 不在请求线程跑完整决策 |
 | `app/runtime/*` | Run 状态机 + 内存任务存储 | 不伪装持久化恢复能力（阶段 3） |
 | `app/repositories/*` | MySQL 真相源表模型与仓储 | API 尚未接线（阶段 3） |
@@ -144,6 +158,8 @@ QUEUED → RUNNING → SUCCEEDED / NO_MATCH / INSUFFICIENT_EVIDENCE / FAILED
 
 ## 9. 部署形态
 
-- 本机：`uvicorn app.main:app`（零外部依赖，Fake Provider）。
-- 阶段 2/3：docker compose（MySQL 3307 / Redis 6380 / ES 9201）+ 独立 Worker 进程。
+- 本机默认：`uvicorn app.main:app`（零外部依赖，Fake Provider）。
+- 本机 ES 通道：`scripts/es_seed_synthetic.py` 灌数后 `SEARCH_PROVIDER=elasticsearch` 启动
+  （docker compose 提供 MySQL 3307 / Redis 6380 / ES 9201；ES 检索+取证通道已可用）。
+- 阶段 3：MySQL 持久化接线 + Outbox + 独立 Worker 进程。
 - 不接入生产；公开版与内部版仅通过 Provider Adapter 差异区分。

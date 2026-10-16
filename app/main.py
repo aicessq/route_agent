@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api.decisions import router as decisions_router
 from app.api.health import router as health_router
@@ -31,7 +33,20 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        resolved_provider = provider or FakeRouteProvider()
+        resolved_provider = provider
+        if resolved_provider is None:
+            # 装配开关：默认 Fake（离线 fixture）；search_provider=elasticsearch 时切 ES 通道。
+            # ES 通道的证据为“索引即证据源”的原型简化，阶段 2 由批量 Evidence Gateway 替换。
+            if resolved_settings.search_provider == "elasticsearch":
+                from app.providers.elasticsearch import ElasticsearchRouteProvider
+
+                resolved_provider = ElasticsearchRouteProvider(
+                    base_url=resolved_settings.elasticsearch_url,
+                    index_name=resolved_settings.elasticsearch_index,
+                    timeout_seconds=resolved_settings.search_timeout_seconds,
+                )
+            else:
+                resolved_provider = FakeRouteProvider()
         service = DecisionService(resolved_provider, resolved_provider)
 
         resolved_llm = llm_client
@@ -93,6 +108,12 @@ def create_app(
     )
     app.include_router(health_router)
     app.include_router(decisions_router, prefix=resolved_settings.api_prefix)
+
+    # 本地测试页（static/index.html）：与 API 同源挂载避免 CORS；目录缺失时静默跳过。
+    # 这是开发自测工具，不是产品 UI（roadmap“明确不做前端”指后者）。
+    static_dir = Path(__file__).resolve().parent.parent / "static"
+    if static_dir.is_dir():
+        app.mount("/ui", StaticFiles(directory=str(static_dir), html=True), name="ui")
     return app
 
 

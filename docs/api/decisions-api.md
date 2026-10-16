@@ -16,7 +16,9 @@
 
 ## POST /api/v1/decisions/preview
 
-同步确定性验证（Fake Provider 驱动，用于开发联调与快速验证）。
+同步确定性验证（用于开发联调与快速验证）。
+Provider 由装配开关决定：默认 Fake Provider（4 条 fixture）；`search_provider=elasticsearch`
+时检索本地 ES 索引（见 `GET /health` 的 `search_provider` 字段）。
 
 请求：
 

@@ -21,7 +21,17 @@ tests/fixtures/      # 阶段 1 领域测试用小型 fixture（代码内 FakeRo
 5. 阶段 2 的 10 万级索引构建：真实种子提取分布 → 参数化扩增 → 风险/设施由显式 Fixture 标注
    （GPX 无法自动证明悬崖/补给，缺失即 UNKNOWN）。
 
-## 阶段 1 现状
+## 阶段 2 部分进展（2026-10-12）
 
-无数据文件；FakeRouteProvider 代码内 fixture（4 条北京路线，含 curated/public_track/synthetic
+- **确定性合成生成器已入仓**：`eval/synthetic.py`（SHA-512 派生，无随机库，同参数逐字段
+  一致；10 城 × 100 区县地点池；`source_kind=synthetic_fixture` 三重打标；索引字段缺失率
+  8%/8%/6%、风险/设施证据缺失 25%/20% 均为显式设计参数）。
+- **灌库脚本已入仓**：`scripts/es_seed_synthetic.py`（重建幂等 + bulk 写入 + 落盘
+  ndjson）；10,000 条已灌入本地 ES 索引 `route_agent_routes`。
+- `data/generated/` 产物不入 git（生成脚本与参数可随时复现）。
+- 风险/设施仍为显式标注（None → UNKNOWN），不从几何数据推断。
+
+## 阶段 1 现状（历史记录）
+
+代码内 FakeRouteProvider fixture（4 条北京路线，含 curated/public_track/synthetic_fixture
 三种来源分级与风险证据缺失场景）。Golden Query 测评基于该 fixture，期望值人工冻结。

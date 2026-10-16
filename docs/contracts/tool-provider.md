@@ -51,7 +51,7 @@ class EvidenceProvider(Protocol):
 | 提供者 | 状态 | 说明 |
 | --- | --- | --- |
 | `FakeRouteProvider` | ✅ | 确定性 fixture；支持 `fail_search / fail_evidence / delay` 故障注入 |
-| `ElasticsearchRouteProvider` | 部分覆盖 | 查询模板由服务端生成（模型不产 DSL）；`collect` 待阶段 2 批量网关 |
+| `ElasticsearchRouteProvider` | ✅（原型简化） | search：归一化 + 分词 AND 地点匹配、缺索引字段候选保留（UNKNOWN 进验证层）；collect：分批 `_mget`，字段缺失 → `UNAVAILABLE`。当前"索引即证据源"，独立批量网关与响应体上限仍是阶段 2 待办 |
 | 内部服务 Adapter（sixfoot-map-api / Search V2 / 行程） | 阶段 2+ | 实现同一 Evidence 契约 |
 
 ## 安全边界
